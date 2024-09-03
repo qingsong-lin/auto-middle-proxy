@@ -1,0 +1,124 @@
+# This file is a template, and might need editing before it works on your project.
+# To contribute improvements to CI/CD templates, please follow the Development guide at:
+# https://docs.gitlab.com/ee/development/cicd/templates.html
+# This specific template is located at:
+# https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Getting-Started.gitlab-ci.yml
+
+# This is a sample GitLab CI/CD configuration file that should run without any modifications.
+# It demonstrates a basic 3 stage CI/CD pipeline. Instead of real tests or scripts,
+# it uses echo commands to simulate the pipeline execution.
+#
+# A pipeline is composed of independent jobs that run scripts, grouped into stages.
+# Stages run in sequential order, but jobs within stages run in parallel.
+#
+# For more information, see: https://docs.gitlab.com/ee/ci/yaml/index.html#stages
+
+# variables:
+#   DOCKER_HOST: tcp://docker:2375
+#   DOCKER_TLS_CERTDIR: ""
+#   DOCKER_DRIVER: overlay2
+
+# variables:
+#   CI_SERVER_URL: "http://gitlab.lgxcloud.com/panda/asus_script.git"
+stages:
+  - build
+  - pre-deploy
+  - deploy
+variables:
+ #docker容器名称,项目地址+版本号
+  CI_CONTAINER_NAME_PRE: "$CI_PROJECT_PATH_SLUG"
+  CI_CONTAINER_NAME: "auto-middle-proxy"
+  VERSION: "$CI_COMMIT_SHORT_SHA"
+  CI_APPLICATION_REPOSITORY_CLASH: "$CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME/clash:$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA"
+  CI_APPLICATION_REPOSITORY_AUTO_MIDDLE_PROXY: "$CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME/auto-middle-proxy:$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA"
+  CI_APPLICATION_REPOSITORY_CLASH_IMG: "$CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME/clash:latest"
+  CI_APPLICATION_REPOSITORY_AUTO_MIDDLE_PROXY_IMG: "$CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME/auto-middle-proxy:latest"
+  SECRET_NAME: "docker-image-key"
+  NACOS_CONFIG: "{\"ClientConfig\":{\"NamespaceId\":\"production\",\"Username\":\"nacos\",\"Password\":\"panda\"}, \"ServerConfigs\": [{\"IpAddr\":\"nacos.common\", \"Port\": 8848}]}"
+
+
+
+build-clash:
+  stage: build
+  image:
+    name: docker:dind
+  variables:
+    CI_APPLICATION_REPOSITORY_CLASH_IMG: "$CI_APPLICATION_REPOSITORY_CLASH"
+  services:
+    - name: docker:dind
+  script:
+    - export DOCKER_HOST="tcp://192.168.50.20:2375"
+    - echo $DOCKER_HOST
+    - docker info
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker build --force-rm --build-arg git_username=$CI_DEPLOY_USER --build-arg git_access_token=$CI_DEPLOY_PASSWORD -t $CI_APPLICATION_REPOSITORY_CLASH -f clash/Dockerfile .
+    - docker tag $CI_APPLICATION_REPOSITORY_CLASH $CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME/clash:latest
+    - docker push $CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME/clash
+    - docker push $CI_APPLICATION_REPOSITORY_CLASH
+    - docker rmi $CI_APPLICATION_REPOSITORY_CLASH
+    - echo "build_panda-auth - Compiling the code..."
+    - echo "build_panda-auth - Compile complete."
+  only:
+    changes:
+      - clash/*
+
+build-auto-middle-proxy:
+  stage: build
+  image:
+    name: docker:dind
+  variables:
+    CI_APPLICATION_REPOSITORY_AUTO_MIDDLE_PROXY_IMG: "$CI_APPLICATION_REPOSITORY_AUTO_MIDDLE_PROXY"
+  services:
+    - name: docker:dind
+  script:
+    - export DOCKER_HOST="tcp://192.168.50.20:2375"
+    - echo $DOCKER_HOST
+    - docker info
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker build --force-rm --build-arg git_username=$CI_DEPLOY_USER --build-arg git_access_token=$CI_DEPLOY_PASSWORD -t $CI_APPLICATION_REPOSITORY_AUTO_MIDDLE_PROXY -f middle-proxy/Dockerfile .
+    - docker tag $CI_APPLICATION_REPOSITORY_AUTO_MIDDLE_PROXY $CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME/auto-middle-proxy:latest
+    - docker push $CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME/auto-middle-proxy
+    - docker push $CI_APPLICATION_REPOSITORY_AUTO_MIDDLE_PROXY
+    - docker rmi $CI_APPLICATION_REPOSITORY_AUTO_MIDDLE_PROXY
+    - echo "build_panda-auth - Compiling the code..."
+    - echo "build_panda-auth - Compile complete."
+  only:
+    changes:
+      - middle-proxy/*
+
+pre-all:
+  image:
+    name: dibi/envsubst
+  stage: pre-deploy
+  variables:
+    CI_CONTAINER_NAME_CLASH: "clash"
+    CI_CONTAINER_NAME_AUTO_MIDDLE_PROXY: "auto-middle-proxy"
+  script:
+    - pwd
+    - envsubst < deployment.yaml > deployment_tmp.yaml
+    - mkdir tmp
+    - mv deployment_tmp.yaml tmp/deployment.yaml
+    - cat tmp/deployment.yaml
+  artifacts:
+    paths:
+      - ./tmp/
+    expire_in: 1 day
+
+deploy-all:      # This job runs in the deploy stage.
+  image:
+    name: bitnami/kubectl:latest
+    entrypoint: ['']
+  stage: deploy  # It only runs when *both* jobs in the test stage complete successfully.
+  script:
+    - echo "clash and auto-middle-proxy - Deploying application..."
+    - env
+    - ls
+    - cat tmp/deployment.yaml
+    - kubectl config get-contexts
+    # kubectl config use-context path/to/agent/repository:agent-name
+    - kubectl config use-context panda/asus_script:panda-agent
+    # - kubectl get pods -A
+    - kubectl apply -n common -f tmp/deployment.yaml
+    - echo "clash and auto-middle-proxy - Application successfully deployed."
+  dependencies:
+    - pre-all

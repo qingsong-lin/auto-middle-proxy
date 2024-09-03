@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: $CI_CONTAINER_NAME
+  namespace: $NAMESPACE
+  labels:
+    app: $CI_CONTAINER_NAME
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: $CI_CONTAINER_NAME
+  template:
+    metadata:
+      labels:
+        app: $CI_CONTAINER_NAME
+#        sidecar.istio.io/inject: 'true'
+        version: '$VERSION'
+    spec:
+      securityContext:
+        sysctls:
+          - name: net.ipv6.conf.all.disable_ipv6
+            value: "0"
+          - name: net.ipv6.conf.default.disable_ipv6
+            value: "0"
+      serviceAccountName: default
+      restartPolicy: Always
+      volumes:
+        - name: auto-proxy-credential
+          configMap:
+            name: auto-proxy-credential
+      containers:
+        - name: $CI_CONTAINER_NAME_CLASH
+          image: $CI_APPLICATION_REPOSITORY_CLASH_IMG
+          env:
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          ports:
+          - name: gin-port
+            containerPort: 80
+            protocol: TCP
+          - name: web-port
+            containerPort: 9090
+            protocol: TCP
+          - name: http-proxy
+            containerPort: 7890
+            protocol: TCP
+          - name: socks
+            containerPort: 7891
+            protocol: TCP
+          imagePullPolicy: IfNotPresent
+        - name: $CI_CONTAINER_NAME_AUTO_MIDDLE_PROXY
+          image: $CI_APPLICATION_REPOSITORY_AUTO_MIDDLE_PROXY_IMG
+          volumeMounts:
+            - name: auto-proxy-credential
+              mountPath: '/etc/auto-middle-proxy/config/credentials.json'  # 将文件挂载到正确的路径
+              subPath: credentials  # 这里的 "credentials" 对应的是 ConfigMap 中的文件名
+          env:
+            - name: PROXIES_DATA
+              value: '["socks5://localhost:7891"]'
+            - name: Version
+              value: '$VERSION'
+            - name: AutoSwitchNode
+              value: 'true'
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          ports:
+            - name: middle-port
+              containerPort: 7856
+              protocol: TCP
+          imagePullPolicy: IfNotPresent
+      imagePullSecrets:
+        - name: $SECRET_NAME

@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  clash:
+    build:
+      context: .
+      dockerfile: ./clash/Dockerfile  # 假设你保存的 Clash Dockerfile 文件名是 Dockerfile
+    container_name: clash
+    ports:
+      - "7892:7890"  # HTTP Proxy
+      - "9090:9090"  # Web Dashboard
+      - "7891:7891"  # SOCKS Proxy
+    restart: always
+
+  core:
+    build:
+      context: .
+      dockerfile: ./middle-proxy/Dockerfile  # 假设你保存的 Middle Proxy Dockerfile 文件名是 Dockerfile
+    container_name: auto-middle-proxy
+    environment:
+      - PROXIES_DATA=["socks5://clash:7891"]
+      - AutoSwitchNode = 'yes'
+    volumes:
+      - ./middle-proxy/config:/etc/auto-middle-proxy/config/
+    ports:
+      - "7856:7856"  # Middle Proxy Port
+      - "8080:80"  # web gin port
+    depends_on:
+      - clash
+    restart: always
