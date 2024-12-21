@@ -31,7 +31,7 @@ RUN wget ${CLASH_URL} -O ~/clash/${CLASH_FILE} && \
     mv ~/clash/CrashCore ~/clash/clash
 
 # 下载 Clash 配置文件
-RUN wget -O ~/clash/config.yaml "https://tmhm0.no-mad-world.club/link/aA9yfVNqy1BKRQ59?clash=3"
+RUN wget -O ~/clash/config.yaml "https://tmhm0.no-mad-world.club/link/********************?clash=3"
 RUN sed -i 's/allow-lan: false/allow-lan: true/' ~/clash/config.yaml
 RUN sed -i 's/external-controller: 127.0.0.1:9090/external-controller: 0.0.0.0:9090/' ~/clash/config.yaml
 # 设置 Clash 二进制文件可执行权限
