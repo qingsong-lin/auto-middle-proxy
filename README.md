@@ -4,7 +4,8 @@
 
 [![Build Status](https://img.shields.io/github/workflow/status/your-repo/auto-middle-proxy/CI)](https://github.com/your-repo/auto-middle-proxy/actions)
 [![Docker pulls](https://img.shields.io/docker/pulls/your-repo/auto-middle-proxy)](https://hub.docker.com/r/your-repo/auto-middle-proxy)
-[![npm version](https://badge.fury.io/js/auto-middle-proxy.svg)](http://badge.fury.io/js/auto-middle-proxy)
+[![Go Report Card](https://goreportcard.com/badge/github.com/istio/istio)](https://goreportcard.com/report/github.com/istio/istio)
+
 
 ## 项目介绍 / Introduction
 
