@@ -54,7 +54,7 @@ func Init() {
 	})
 
 	// 监听端口
-	err := r.Run(":8090")
+	err := r.Run(":80")
 	if err != nil {
 		log.Logger.Fatal("Failed to start server: %v", zap.Error(err))
 	}

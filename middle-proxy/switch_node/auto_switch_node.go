@@ -120,7 +120,7 @@ func AutoSwitchNode(proxyHost string) {
 		// 直接返回一个空的Providers对象，表示无需切换代理
 		return
 	}
-	conn := service.PingHostThroughProxy("https://github.com:443", proxyHost, "http", "")
+	conn := service.PingHostThroughProxy("https://github.com:443", proxyHost, "https", "")
 	if conn != nil {
 		conn.Close()
 		return // 成功连接，退出
@@ -149,7 +149,7 @@ func AutoSwitchNode(proxyHost string) {
 			continue
 		}
 		// 使用当前代理进行ping测试
-		conn = service.PingHostThroughProxy("https://github.com:443", proxyHost, "http", "")
+		conn = service.PingHostThroughProxy("https://github.com:443", proxyHost, "https", "")
 		if conn != nil {
 			conn.Close()
 			log.Printf("Successfully connected using proxy: %s", nodeProxy)
