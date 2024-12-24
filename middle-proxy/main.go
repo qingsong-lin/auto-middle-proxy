@@ -318,8 +318,9 @@ type ConnProxyPair struct {
 
 // 读取缓存或选择代理
 func getProxyForRequest(host, scheme, urlPath string) (string, error, net.Conn) {
+	var passLocalHost bool
 	if _, ok := service.ConstantUseProxy[processURL(host)]; ok {
-		return proxies[0], nil, nil
+		passLocalHost = true
 	}
 	forbiddenProxy, ok2 := domainForbiddenProxyCache.Load(host)
 	if proxy, ok := domainProxyCache.Load(host); ok {
@@ -335,7 +336,7 @@ func getProxyForRequest(host, scheme, urlPath string) (string, error, net.Conn) 
 	defer safeChannel.Close()
 	var wg sync.WaitGroup
 	// 检查本地网络是否可用
-	if !(ok2 && forbiddenProxy == "") {
+	if !(ok2 && forbiddenProxy == "") && !passLocalHost {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -353,7 +354,7 @@ func getProxyForRequest(host, scheme, urlPath string) (string, error, net.Conn) 
 			}, retry.Attempts(3), // 设置重试次数为3次
 				retry.Delay(0))
 		}()
-	} else {
+	} else if ok2 && forbiddenProxy == "" {
 		domainForbiddenProxyCache.Delete(host)
 		log.Logger.Info("domainForbiddenProxyCache delete for local", zap.String("host", host), zap.String("proxy", forbiddenProxy.(string)))
 	}
