@@ -5,6 +5,7 @@ COPY . /app
 ENV GOPROXY https://goproxy.cn,direct
 ENV GO111MODULE on
 ENV PROXIES_DATA '["http://localhost:7891"]'
+RUN rm -f go.mod go.sum
 RUN go mod init middle-proxy
 RUN go mod tidy
 RUN go build .

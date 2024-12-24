@@ -19,7 +19,7 @@ services:
     container_name: auto-middle-proxy
     environment:
       - PROXIES_DATA=["socks5://clash:7891"]
-      - AutoSwitchNode = 'yes'
+      - AutoSwitchNode=yes
     volumes:
       - ./middle-proxy/config:/etc/auto-middle-proxy/config/
     ports:
