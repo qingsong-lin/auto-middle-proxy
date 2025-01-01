@@ -115,7 +115,7 @@ func AutoSwitchNode(proxyHost string) {
 		log.Fatalf("fail ExtractHostFromURL err: %v", err)
 		return
 	}
-	if !isPortOpen(clashServer, 9090) {
+	if !(isPortOpen(clashServer, 9090) && strings.Contains(proxyHost, "7891")) {
 		//log.Printf("Clash server at %s is not responding on port 9090. No need to switch proxy.", clashServer)
 		// 直接返回一个空的Providers对象，表示无需切换代理
 		return
@@ -125,7 +125,7 @@ func AutoSwitchNode(proxyHost string) {
 		conn.Close()
 		return // 成功连接，退出
 	}
-
+	log.Printf("Clash server at %s is on port 9090.", proxyHost)
 	// 获取代理列表
 	providers, err := getProxies(clashServer)
 	if err != nil {

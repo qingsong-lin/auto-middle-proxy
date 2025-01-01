@@ -362,9 +362,10 @@ func getProxyForRequest(host, scheme, urlPath string) (string, error, net.Conn) 
 	// 使用代理服务器列表逐个 ping
 	for _, proxy := range proxies {
 		proxyHost := proxy
-		go func() {
-			if !(ok2 && forbiddenProxy == proxyHost) {
-				wg.Add(1)
+		if !(ok2 && forbiddenProxy == proxyHost) {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
 				retry.Do(func() error {
 					conn := service.PingHostThroughProxy(host, proxyHost, scheme, urlPath)
 					if safeChannel.IsClose() {
@@ -377,11 +378,11 @@ func getProxyForRequest(host, scheme, urlPath string) (string, error, net.Conn) 
 					return fmt.Errorf("ping through proxy failed proxyHost: %s", proxyHost) // 失败，进行重试
 				}, retry.Attempts(3), // 设置重试次数为3次
 					retry.Delay(0))
-			} else {
-				domainForbiddenProxyCache.Delete(host)
-				log.Logger.Info("domainForbiddenProxyCache delete for proxy", zap.String("host", host), zap.String("proxy", forbiddenProxy.(string)))
-			}
-		}()
+			}()
+		} else {
+			domainForbiddenProxyCache.Delete(host)
+			log.Logger.Info("domainForbiddenProxyCache delete for proxy", zap.String("host", host), zap.String("proxy", forbiddenProxy.(string)))
+		}
 	}
 	go func() {
 		wg.Wait()
@@ -517,6 +518,7 @@ func checkProxies() {
 // 定期刷新缓存
 func refreshCachePeriodically() {
 	autoSwitchNode := os.Getenv("AutoSwitchNode")
+	log.Logger.Info("refreshCachePeriodically", zap.String("AutoSwitchNode", autoSwitchNode))
 	if autoSwitchNode != "" {
 		checkProxies()
 		go func() {

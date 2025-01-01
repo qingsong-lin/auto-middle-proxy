@@ -72,6 +72,6 @@ spec:
             - name: middle-port
               containerPort: 7856
               protocol: TCP
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always # IfNotPresent
       imagePullSecrets:
         - name: $SECRET_NAME
