@@ -59,7 +59,7 @@ spec:
               subPath: credentials  # 这里的 "credentials" 对应的是 ConfigMap 中的文件名
           env:
             - name: PROXIES_DATA
-              value: '["socks5://localhost:7891"]'
+              value: '["socks5://localhost:7891","socks5://guac-proxy.common:7856"]'
             - name: Version
               value: '$VERSION'
             - name: AutoSwitchNode

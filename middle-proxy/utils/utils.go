@@ -12,9 +12,9 @@ import (
 )
 
 func GetFQDN(scheme, host string) string {
-	if scheme == "https" && strings.Contains(host, ":443") {
+	if scheme == "https" && strings.HasSuffix(host, ":443") {
 		return fmt.Sprintf("%s://%s", scheme, strings.ReplaceAll(host, ":443", ""))
-	} else if scheme == "http" && strings.Contains(host, ":80") {
+	} else if scheme == "http" && strings.HasSuffix(host, ":80") {
 		return fmt.Sprintf("%s://%s", scheme, strings.ReplaceAll(host, ":80", ""))
 	}
 	return fmt.Sprintf("%s://%s", scheme, host)
