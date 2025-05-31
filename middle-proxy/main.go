@@ -308,7 +308,7 @@ func proxyFunc(req *http.Request) (*url.URL, error) {
 	}
 
 	log.Logger.Info("Using proxy", zap.String("proxyAddress", proxyAddress), zap.String("hostWithPortAndSchem", hostWithPortAndSchem))
-	return url.Parse("http://" + proxyAddress)
+	return url.Parse(proxyAddress)
 }
 
 type ConnProxyPair struct {
